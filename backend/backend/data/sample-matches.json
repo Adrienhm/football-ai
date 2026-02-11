@@ -1,0 +1,47 @@
+[
+  {
+    "teamA": "Paris FC",
+    "teamB": "Lyon",
+    "scoreA": 2,
+    "scoreB": 1,
+    "form": "Positive",
+    "risk": "Faible",
+    "date": "2026-01-20"
+  },
+  {
+    "teamA": "Marseille",
+    "teamB": "Monaco",
+    "scoreA": 2,
+    "scoreB": 2,
+    "form": "Stable",
+    "risk": "Modere",
+    "date": "2026-01-13"
+  },
+  {
+    "teamA": "Lille",
+    "teamB": "Rennes",
+    "scoreA": 2,
+    "scoreB": 1,
+    "form": "Positive",
+    "risk": "Faible",
+    "date": "2025-10-15"
+  },
+  {
+    "teamA": "Nice",
+    "teamB": "Lyon",
+    "scoreA": 1,
+    "scoreB": 2,
+    "form": "Stable",
+    "risk": "Modere",
+    "date": "2026-01-17"
+  },
+  {
+    "teamA": "Lens",
+    "teamB": "Marseille",
+    "scoreA": 1,
+    "scoreB": 2,
+    "form": "Fragile",
+    "risk": "Eleve",
+    "date": "2025-10-28"
+  }
+]
