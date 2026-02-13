@@ -20,11 +20,15 @@ function ProtectedRoute({ authed, children }) {
 }
 
 function App() {
+  const sportOptions = ["Football", "Basketball", "Tennis", "Rugby", "Handball"];
   const [aiStatus, setAiStatus] = useState("checking");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [starting, setStarting] = useState(false);
   const [topbarMessage, setTopbarMessage] = useState("");
   const [showShare, setShowShare] = useState(false);
+  const [activeSport, setActiveSport] = useState(
+    () => localStorage.getItem("sai_active_sport") || "Football"
+  );
   const [authState, setAuthState] = useState(() => {
     const token = localStorage.getItem("fai_token");
     const rawUser = localStorage.getItem("fai_user");
@@ -72,7 +76,7 @@ function App() {
 
   const handleNewSimulation = () => {
     navigate("/predictions");
-    setTopbarMessage("Nouvelle simulation prête.");
+    setTopbarMessage(`Nouvelle simulation ${activeSport} prête.`);
   };
 
   const handleLogin = async (payload) => {
@@ -98,8 +102,15 @@ function App() {
 
   const shareUrl = encodeURIComponent(window.location.href);
   const shareText = encodeURIComponent(
-    "Football AI — Analyse et prediction sportive. Decouvre le tableau de bord :"
+    `Sport AI — Analyse et prediction ${activeSport}. Decouvre le tableau de bord :`
   );
+
+  const handleSportChange = (event) => {
+    const nextSport = event.target.value;
+    setActiveSport(nextSport);
+    localStorage.setItem("sai_active_sport", nextSport);
+    setTopbarMessage(`Sport actif: ${nextSport}`);
+  };
 
   if (!authed) {
     return (
@@ -116,9 +127,9 @@ function App() {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-mark">FAI</span>
+          <span className="brand-mark">SAI</span>
           <div>
-            <p className="brand-title">Football AI</p>
+            <p className="brand-title">Sport AI</p>
             <p className="brand-sub">Analyse & prédiction sportive</p>
           </div>
         </div>
@@ -154,6 +165,13 @@ function App() {
             <h2>Tableau de bord IA</h2>
           </div>
           <div className="topbar-actions">
+            <select className="sport-select" value={activeSport} onChange={handleSportChange}>
+              {sportOptions.map((sport) => (
+                <option key={sport} value={sport}>
+                  {sport}
+                </option>
+              ))}
+            </select>
             <div className="user-pill">
               <span>{authState.user?.name || "Utilisateur"}</span>
               <button className="button ghost" onClick={handleLogout}>
@@ -176,7 +194,7 @@ function App() {
               path="/"
               element={
                 <ProtectedRoute authed={authed}>
-                  <Dashboard />
+                  <Dashboard sport={activeSport} />
                 </ProtectedRoute>
               }
             />
