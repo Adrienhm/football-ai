@@ -174,7 +174,7 @@ function ModelLab() {
     <div className="page">
       <div className="page-head">
         <div>
-          <p className="eyebrow">Model Lab</p>
+          <p className="eyebrow">Laboratoire IA</p>
           <h1>Comparer et ajuster le modèle</h1>
           <p className="lead">Teste plusieurs algorithmes et observe les features clé.</p>
         </div>
@@ -202,7 +202,7 @@ function ModelLab() {
           </div>
           <div className="score-grid">
             <div>
-              <span>Model</span>
+              <span>Modèle</span>
               <strong>{metrics?.model || "-"}</strong>
             </div>
             <div>
@@ -237,7 +237,7 @@ function ModelLab() {
 
         <div className="panel">
           <div className="section-head">
-            <h2>Features les plus influentes</h2>
+            <h2>Variables les plus influentes</h2>
             <p>Importance moyenne par variable.</p>
           </div>
           <div className="importance">
@@ -260,7 +260,7 @@ function ModelLab() {
 
       <section className="panel">
         <div className="section-head">
-          <h2>Comparatif Logistic vs Random Forest</h2>
+          <h2>Comparatif Régression logistique vs Forêt aléatoire</h2>
           <p>Métriques cote a cote sur le meme dataset.</p>
         </div>
         <div className="compare-grid">
@@ -312,7 +312,7 @@ function ModelLab() {
 
       <section className="panel">
         <div className="section-head">
-          <h2>Precision-Recall par classe</h2>
+          <h2>Précision-Rappel par classe</h2>
           <p>Courbes PR pour chaque outcome.</p>
         </div>
         {rocByClass.map((modelEntry) => (
@@ -336,7 +336,7 @@ function ModelLab() {
       <section className="grid-two">
         <div className="panel">
           <div className="section-head">
-            <h2>Confusion matrix</h2>
+            <h2>Matrice de confusion</h2>
             <p>Modèle actif (dernier entrainement).</p>
           </div>
           <ConfusionTable matrix={metrics?.confusion_matrix} labels={metrics?.classes || []} />
