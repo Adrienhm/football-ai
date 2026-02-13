@@ -65,7 +65,7 @@ function DataHub() {
     <div className="page">
       <div className="page-head">
         <div>
-          <p className="eyebrow">Data Hub</p>
+          <p className="eyebrow">Centre de données</p>
           <h1>Jeux de données et scoring</h1>
           <p className="lead">
             Dataset local CSV, versioning modèle et suivi des métriques.
@@ -82,7 +82,7 @@ function DataHub() {
       <section className="grid-two">
         <div className="panel">
           <div className="section-head">
-            <h2>Dataset principal</h2>
+          <h2>Jeu de données principal</h2>
             <p>Source: ai/data/matches.csv</p>
           </div>
           <ul className="dataset-list">

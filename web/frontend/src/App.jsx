@@ -141,20 +141,20 @@ function App() {
 
         <nav className="side-nav">
           <NavLink to="/" end>
-            Dashboard
+            Tableau de bord
           </NavLink>
           <NavLink to="/predictions">Prédictions</NavLink>
           <NavLink to="/matches">Matchs</NavLink>
-          <NavLink to="/insights">Insights</NavLink>
+          <NavLink to="/insights">Analyses</NavLink>
           <NavLink to="/players">Joueurs</NavLink>
-          <NavLink to="/data">Data Hub</NavLink>
-          <NavLink to="/model">Model Lab</NavLink>
+          <NavLink to="/data">Données</NavLink>
+          <NavLink to="/model">Laboratoire IA</NavLink>
         </nav>
 
         <div className="sidebar-card">
           <p>Etat IA</p>
           <strong>Modèle actif</strong>
-          <span>Voir Model Lab</span>
+          <span>Voir Laboratoire IA</span>
         </div>
       </aside>
 
@@ -293,7 +293,7 @@ function App() {
             <div className="share-actions">
               <a
                 className="button primary"
-                href={`mailto:?subject=Football AI&body=${shareText}%0A${shareUrl}`}
+                href={`mailto:?subject=Sport AI&body=${shareText}%0A${shareUrl}`}
               >
                 Email
               </a>

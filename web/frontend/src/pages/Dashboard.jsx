@@ -207,7 +207,7 @@ function Dashboard({ sport = "Football" }) {
     <div className="page">
       <div className="page-head">
         <div>
-          <p className="eyebrow">Dashboard</p>
+          <p className="eyebrow">Tableau de bord</p>
           <h1>Suivi temps reel des performances ({sport})</h1>
           <p className="lead">
             Synthese IA des tendances, formes d'equipe et alertes de risque multi-sports.
@@ -278,7 +278,7 @@ function Dashboard({ sport = "Football" }) {
               </defs>
             </svg>
             <div className="chart-legend">
-              <span>Baseline</span>
+              <span>Base</span>
               <span>Pic de forme</span>
             </div>
           </div>
@@ -336,7 +336,7 @@ function Dashboard({ sport = "Football" }) {
 
         <div className="panel">
           <div className="section-head">
-            <h2>Timeline rencontre</h2>
+            <h2>Chronologie de la rencontre</h2>
             <p>Moments cles et zones d'impact.</p>
           </div>
           <div className="timeline">
@@ -368,7 +368,7 @@ function Dashboard({ sport = "Football" }) {
       <section className="panel">
         <div className="section-head">
           <div>
-            <h2>{isFootball ? "Heatmap d'occupation" : "Carte des zones d'impact"}</h2>
+            <h2>{isFootball ? "Carte thermique d'occupation" : "Carte des zones d'impact"}</h2>
             <p>
               {isFootball
                 ? "Zones de presence moyenne sur 90 minutes."
