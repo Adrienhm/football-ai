@@ -131,6 +131,15 @@
   flex-wrap: wrap;
 }
 
+.sport-select {
+  background: var(--surface-strong);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 12px;
+  border-radius: 12px;
+  min-width: 140px;
+}
+
 .topbar-message {
   align-self: center;
   color: var(--muted);
