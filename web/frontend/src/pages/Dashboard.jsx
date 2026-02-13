@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
 
 const trendPoints = [12, 18, 15, 22, 28, 24, 30];
@@ -12,19 +12,19 @@ const heatmapPattern = [
   1, 1, 1, 2, 2, 2, 1, 1, 1, 2, 2, 1,
 ];
 
-function Dashboard() {
+function Dashboard({ sport = "Football" }) {
   const [matches, setMatches] = useState([]);
   const [animateHeat, setAnimateHeat] = useState(true);
   const [reportStatus, setReportStatus] = useState("");
   const [reporting, setReporting] = useState(false);
 
+  const isFootball = sport === "Football";
+
   useEffect(() => {
     api
       .get("/matches")
       .then((res) => setMatches(res.data))
-      .catch(() => {
-        setMatches([]);
-      });
+      .catch(() => setMatches([]));
   }, []);
 
   const stats = useMemo(() => {
@@ -62,7 +62,7 @@ function Dashboard() {
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Football AI - Rapport</title>
+  <title>Sport AI - Rapport</title>
   <style>
     body { font-family: Arial, sans-serif; background: #0f1715; color: #f4f7f2; padding: 24px; }
     h1 { margin: 0 0 8px; }
@@ -75,13 +75,13 @@ function Dashboard() {
   </style>
 </head>
 <body>
-  <h1>Football AI - Rapport de performance</h1>
-  <div class="meta">Genère le: ${new Date().toLocaleString("fr-FR")}</div>
+  <h1>Sport AI - Rapport de performance (${sport})</h1>
+  <div class="meta">Genere le: ${new Date().toLocaleString("fr-FR")}</div>
   <div class="grid">
-    <div class="card"><strong>Matchs analysés</strong><div>${stats.total}</div></div>
-    <div class="card"><strong>Moyenne de buts</strong><div>${stats.avgGoals}</div></div>
-    <div class="card"><strong>Victoire domicile</strong><div>${stats.homeWinRate}%</div></div>
-    <div class="card"><strong>Volatilité (nuls)</strong><div>${stats.volatility}%</div></div>
+    <div class="card"><strong>Matchs analyses</strong><div>${stats.total}</div></div>
+    <div class="card"><strong>${isFootball ? "Moyenne de buts" : "Points moyens"}</strong><div>${stats.avgGoals}</div></div>
+    <div class="card"><strong>Victoire equipe A</strong><div>${stats.homeWinRate}%</div></div>
+    <div class="card"><strong>Volatilite (nuls)</strong><div>${stats.volatility}%</div></div>
   </div>
   <h2>Derniers matchs</h2>
   <table>
@@ -101,14 +101,14 @@ function Dashboard() {
     try {
       const now = new Date();
       const reportLines = [
-        "Football AI - Rapport de performance",
-        `Genère le: ${now.toLocaleString("fr-FR")}`,
+        `Sport AI - Rapport de performance (${sport})`,
+        `Genere le: ${now.toLocaleString("fr-FR")}`,
         "",
-        "Synthèse",
-        `- Matchs analysés: ${stats.total}`,
-        `- Moyenne de buts: ${stats.avgGoals}`,
-        `- Victoire domicile: ${stats.homeWinRate}%`,
-        `- Volatilité (nuls): ${stats.volatility}%`,
+        "Synthese",
+        `- Matchs analyses: ${stats.total}`,
+        `- ${isFootball ? "Moyenne de buts" : "Points moyens"}: ${stats.avgGoals}`,
+        `- Victoire equipe A: ${stats.homeWinRate}%`,
+        `- Volatilite (nuls): ${stats.volatility}%`,
         "",
         "Derniers matchs",
       ];
@@ -127,14 +127,14 @@ function Dashboard() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `football-ai-rapport-${now.toISOString().slice(0, 10)}.txt`;
+      link.download = `sport-ai-${sport.toLowerCase()}-rapport-${now.toISOString().slice(0, 10)}.txt`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      setReportStatus("Rapport TXT généré et telecharge.");
-    } catch (err) {
-      setReportStatus("Impossible de générer le rapport TXT.");
+      setReportStatus("Rapport TXT genere et telecharge.");
+    } catch {
+      setReportStatus("Impossible de generer le rapport TXT.");
     } finally {
       setReporting(false);
     }
@@ -148,14 +148,14 @@ function Dashboard() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `football-ai-rapport-${new Date().toISOString().slice(0, 10)}.html`;
+      link.download = `sport-ai-${sport.toLowerCase()}-rapport-${new Date().toISOString().slice(0, 10)}.html`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      setReportStatus("Rapport HTML genéré et telecharge.");
-    } catch (err) {
-      setReportStatus("Impossible de genérer le rapport HTML.");
+      setReportStatus("Rapport HTML genere et telecharge.");
+    } catch {
+      setReportStatus("Impossible de generer le rapport HTML.");
     } finally {
       setReporting(false);
     }
@@ -168,13 +168,13 @@ function Dashboard() {
       const url = URL.createObjectURL(res.data);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `football-ai-matches-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.download = `sport-ai-${sport.toLowerCase()}-matches-${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      setReportStatus("Export CSV téléchargé.");
-    } catch (err) {
+      setReportStatus("Export CSV telecharge.");
+    } catch {
       setReportStatus("Impossible d'exporter le CSV.");
     } finally {
       setReporting(false);
@@ -188,27 +188,29 @@ function Dashboard() {
       const url = URL.createObjectURL(res.data);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `football-ai-rapport-${new Date().toISOString().slice(0, 10)}.pdf`;
+      link.download = `sport-ai-${sport.toLowerCase()}-rapport-${new Date().toISOString().slice(0, 10)}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      setReportStatus("Rapport PDF genéré et télechargé.");
-    } catch (err) {
-      setReportStatus("Impossible de genérer le rapport PDF.");
+      setReportStatus("Rapport PDF genere et telecharge.");
+    } catch {
+      setReportStatus("Impossible de generer le rapport PDF.");
     } finally {
       setReporting(false);
     }
   };
+
+  const heatCells = isFootball ? heatmapPattern : heatmapPattern.slice(0, 40);
 
   return (
     <div className="page">
       <div className="page-head">
         <div>
           <p className="eyebrow">Dashboard</p>
-          <h1>Suivi temps réel des performances</h1>
+          <h1>Suivi temps reel des performances ({sport})</h1>
           <p className="lead">
-            Synthèse IA des tendances de ligue, formes d'équipe et alertes de risque.
+            Synthese IA des tendances, formes d'equipe et alertes de risque multi-sports.
           </p>
         </div>
         <div className="button-group">
@@ -231,24 +233,24 @@ function Dashboard() {
 
       <section className="kpi-grid">
         <article className="kpi-card">
-          <p>Matchs analysés</p>
+          <p>Matchs analyses</p>
           <strong>{stats.total}</strong>
-          <span>Sur la période récente</span>
+          <span>Sur la periode recente</span>
         </article>
         <article className="kpi-card">
-          <p>Moyenne de buts</p>
+          <p>{isFootball ? "Moyenne de buts" : "Points moyens"}</p>
           <strong>{stats.avgGoals}</strong>
-          <span>Par match</span>
+          <span>Par rencontre</span>
         </article>
         <article className="kpi-card">
-          <p>Victoire domicile</p>
+          <p>Victoire equipe A</p>
           <strong>{stats.homeWinRate}%</strong>
-          <span>Impact terrain</span>
+          <span>Impact domicile/terrain</span>
         </article>
         <article className="kpi-card">
-          <p>Volatilité (nuls)</p>
+          <p>Volatilite (nuls)</p>
           <strong>{stats.volatility}%</strong>
-          <span>Matchs équilibrés</span>
+          <span>Matchs equilibres</span>
         </article>
       </section>
 
@@ -256,7 +258,7 @@ function Dashboard() {
         <div className="panel">
           <div className="section-head">
             <h2>Indice de forme collectif</h2>
-            <p>Score aggregé des 7 derniers cycles.</p>
+            <p>Score agrege des 7 derniers cycles.</p>
           </div>
           <div className="chart">
             <svg viewBox="0 0 240 120" role="img" aria-label="Form trend">
@@ -285,20 +287,20 @@ function Dashboard() {
         <div className="panel">
           <div className="section-head">
             <h2>Alertes IA prioritaires</h2>
-            <p>Dernières anomalies détectées.</p>
+            <p>Dernieres anomalies detectees.</p>
           </div>
           <ul className="alerts">
             <li>
               <strong>Risque de blessure</strong>
-              <span>Paris FC - charge elevée sur 3 matches.</span>
+              <span>Charge elevee detectee sur le dernier cycle.</span>
             </li>
             <li>
               <strong>Fatigue collective</strong>
-              <span>Marseille - baisse d'intensité sur 15 minutes.</span>
+              <span>Baisse d'intensite dans le dernier tiers du match.</span>
             </li>
             <li>
-              <strong>Opportunité tactique</strong>
-              <span>Lille - couloir gauche disponible.</span>
+              <strong>Opportunite tactique</strong>
+              <span>Zone forte exploitable identifiee par l'IA.</span>
             </li>
           </ul>
         </div>
@@ -307,11 +309,15 @@ function Dashboard() {
       <section className="grid-two">
         <div className="panel">
           <div className="section-head">
-            <h2>Tendance xG</h2>
-            <p>Evolution des expected goals sur 7 cycles.</p>
+            <h2>{isFootball ? "Tendance xG" : "Tendance offensive"}</h2>
+            <p>
+              {isFootball
+                ? "Evolution des expected goals sur 7 cycles."
+                : "Evolution d'un indice offensif sur 7 cycles."}
+            </p>
           </div>
           <div className="chart">
-            <svg viewBox="0 0 240 120" role="img" aria-label="xG trend">
+            <svg viewBox="0 0 240 120" role="img" aria-label="Offensive trend">
               <polyline
                 fill="none"
                 stroke="#4ad6ff"
@@ -322,16 +328,16 @@ function Dashboard() {
               />
             </svg>
             <div className="chart-legend">
-              <span>xG bas</span>
-              <span>xG haut</span>
+              <span>{isFootball ? "xG bas" : "Indice bas"}</span>
+              <span>{isFootball ? "xG haut" : "Indice haut"}</span>
             </div>
           </div>
         </div>
 
         <div className="panel">
           <div className="section-head">
-            <h2>Timeline match</h2>
-            <p>Moments clé et zones d'impact.</p>
+            <h2>Timeline rencontre</h2>
+            <p>Moments cles et zones d'impact.</p>
           </div>
           <div className="timeline">
             <div className="timeline-row">
@@ -353,7 +359,7 @@ function Dashboard() {
               <div className="timeline-bar">
                 <div className="timeline-event low" style={{ width: "72%" }} />
               </div>
-              <span>Fatigue défensive</span>
+              <span>Baisse de regime</span>
             </div>
           </div>
         </div>
@@ -362,8 +368,12 @@ function Dashboard() {
       <section className="panel">
         <div className="section-head">
           <div>
-            <h2>Heatmap d'occupation</h2>
-            <p>Zones de présence moyenne sur 90 minutes.</p>
+            <h2>{isFootball ? "Heatmap d'occupation" : "Carte des zones d'impact"}</h2>
+            <p>
+              {isFootball
+                ? "Zones de presence moyenne sur 90 minutes."
+                : "Visualisation generique des zones de presence."}
+            </p>
           </div>
           <label className="toggle">
             <input
@@ -378,27 +388,29 @@ function Dashboard() {
           </label>
         </div>
         <div className={`pitch ${animateHeat ? "heat-animate" : "heat-static"}`}>
-          <div className="pitch-lines">
-            <span className="pitch-half" />
-            <span className="pitch-circle" />
-            <span className="pitch-spot" />
-            <span className="pitch-box left" />
-            <span className="pitch-box right" />
-            <span className="pitch-pen left" />
-            <span className="pitch-pen right" />
-            <span className="pitch-goal left" />
-            <span className="pitch-goal right" />
-            <span className="pitch-arc left" />
-            <span className="pitch-arc right" />
-            <span className="pitch-pen-spot left" />
-            <span className="pitch-pen-spot right" />
-            <span className="pitch-corner tl" />
-            <span className="pitch-corner tr" />
-            <span className="pitch-corner bl" />
-            <span className="pitch-corner br" />
-          </div>
-          <div className="heatmap-grid">
-            {heatmapPattern.map((level, idx) => (
+          {isFootball ? (
+            <div className="pitch-lines">
+              <span className="pitch-half" />
+              <span className="pitch-circle" />
+              <span className="pitch-spot" />
+              <span className="pitch-box left" />
+              <span className="pitch-box right" />
+              <span className="pitch-pen left" />
+              <span className="pitch-pen right" />
+              <span className="pitch-goal left" />
+              <span className="pitch-goal right" />
+              <span className="pitch-arc left" />
+              <span className="pitch-arc right" />
+              <span className="pitch-pen-spot left" />
+              <span className="pitch-pen-spot right" />
+              <span className="pitch-corner tl" />
+              <span className="pitch-corner tr" />
+              <span className="pitch-corner bl" />
+              <span className="pitch-corner br" />
+            </div>
+          ) : null}
+          <div className={isFootball ? "heatmap-grid" : "heatmap"}>
+            {heatCells.map((level, idx) => (
               <span key={idx} className={`heatmap-cell heat-${level}`} />
             ))}
           </div>

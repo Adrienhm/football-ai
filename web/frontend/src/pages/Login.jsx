@@ -31,9 +31,9 @@ function Login({ onLogin }) {
   return (
     <div className="auth-card">
       <div className="auth-brand">
-        <span className="brand-mark">FAI</span>
+        <span className="brand-mark">SAI</span>
         <div>
-          <h1>Football AI</h1>
+          <h1>Sport AI</h1>
           <p>Analyse et prédiction sportive</p>
         </div>
       </div>
