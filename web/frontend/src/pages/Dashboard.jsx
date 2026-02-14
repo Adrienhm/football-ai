@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
+import { toSportKey } from "../services/sports";
 
 const trendPoints = [12, 18, 15, 22, 28, 24, 30];
 const xgTrend = [0.9, 1.4, 1.1, 1.7, 2.2, 1.8, 2.0];
@@ -13,6 +14,7 @@ const heatmapPattern = [
 ];
 
 function Dashboard({ sport = "Football" }) {
+  const sportKey = toSportKey(sport);
   const [matches, setMatches] = useState([]);
   const [animateHeat, setAnimateHeat] = useState(true);
   const [reportStatus, setReportStatus] = useState("");
@@ -22,10 +24,10 @@ function Dashboard({ sport = "Football" }) {
 
   useEffect(() => {
     api
-      .get("/matches")
+      .get("/matches", { params: { sport: sportKey } })
       .then((res) => setMatches(res.data))
       .catch(() => setMatches([]));
-  }, []);
+  }, [sportKey]);
 
   const stats = useMemo(() => {
     if (!matches.length) {
@@ -164,7 +166,7 @@ function Dashboard({ sport = "Football" }) {
   const generateCsvExport = async () => {
     setReporting(true);
     try {
-      const res = await api.get("/report/csv", { responseType: "blob" });
+      const res = await api.get("/report/csv", { params: { sport: sportKey }, responseType: "blob" });
       const url = URL.createObjectURL(res.data);
       const link = document.createElement("a");
       link.href = url;
@@ -184,7 +186,7 @@ function Dashboard({ sport = "Football" }) {
   const generatePdfReport = async () => {
     setReporting(true);
     try {
-      const res = await api.get("/report/pdf", { responseType: "blob" });
+      const res = await api.get("/report/pdf", { params: { sport: sportKey }, responseType: "blob" });
       const url = URL.createObjectURL(res.data);
       const link = document.createElement("a");
       link.href = url;
