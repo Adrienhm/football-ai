@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
+import { toSportKey } from "../services/sports";
 
 const algoOptions = [
   { value: "logistic", label: "Logistic Regression" },
@@ -8,21 +9,19 @@ const algoOptions = [
 
 const buildPolyline = (points = [], width = 240, height = 120) => {
   if (!points.length) return "";
-  return points
-    .map((p) => `${p.x * width},${height - p.y * height}`)
-    .join(" ");
+  return points.map((point) => `${point.x * width},${height - point.y * height}`).join(" ");
 };
 
 const mapRoc = (roc) =>
-  (roc?.fpr || []).map((fpr, idx) => ({
+  (roc?.fpr || []).map((fpr, index) => ({
     x: fpr,
-    y: roc.tpr?.[idx] ?? 0,
+    y: roc.tpr?.[index] ?? 0,
   }));
 
 const mapPr = (pr) =>
-  (pr?.recall || []).map((recall, idx) => ({
+  (pr?.recall || []).map((recall, index) => ({
     x: recall,
-    y: pr.precision?.[idx] ?? 0,
+    y: pr.precision?.[index] ?? 0,
   }));
 
 const ConfusionTable = ({ matrix = [], labels = [] }) => {
@@ -35,11 +34,11 @@ const ConfusionTable = ({ matrix = [], labels = [] }) => {
           <span key={label}>{label}</span>
         ))}
       </div>
-      {matrix.map((row, idx) => (
-        <div className="matrix-row" key={`row-${idx}`}>
-          <span className="matrix-label">{labels[idx]}</span>
-          {row.map((cell, cellIdx) => (
-            <span className="matrix-cell" key={`cell-${idx}-${cellIdx}`}>
+      {matrix.map((row, rowIndex) => (
+        <div className="matrix-row" key={`row-${rowIndex}`}>
+          <span className="matrix-label">{labels[rowIndex]}</span>
+          {row.map((cell, cellIndex) => (
+            <span className="matrix-cell" key={`cell-${rowIndex}-${cellIndex}`}>
               {cell}
             </span>
           ))}
@@ -61,7 +60,8 @@ const CurveCard = ({ title, subtitle, polyline, footer }) => (
   </div>
 );
 
-function ModelLab() {
+function ModelLab({ sport = "Football" }) {
+  const sportKey = toSportKey(sport);
   const [metrics, setMetrics] = useState(null);
   const [compare, setCompare] = useState(null);
   const [algo, setAlgo] = useState("logistic");
@@ -72,29 +72,33 @@ function ModelLab() {
   const loadMetrics = async () => {
     setLoading(true);
     try {
+      const params = { sport: sportKey };
       const [singleRes, compareRes, activeRes] = await Promise.all([
-        api.get("/ai/metrics"),
-        api.get("/ai/metrics/compare"),
-        api.get("/ai/model/active"),
+        api.get("/ai/metrics", { params }),
+        api.get("/ai/metrics/compare", { params }),
+        api.get("/ai/model/active", { params }),
       ]);
+
       setMetrics(singleRes.data);
       setCompare(compareRes.data);
       setActiveModel(activeRes.data?.active || "logistic");
 
       const hasCompare =
-        compareRes.data?.logistic?.accuracy !== undefined ||
-        compareRes.data?.rf?.accuracy !== undefined;
+        compareRes.data?.logistic?.accuracy !== undefined || compareRes.data?.rf?.accuracy !== undefined;
       if (!hasCompare) {
-        await api.post("/ai/train/compare");
-        const refreshed = await api.get("/ai/metrics/compare");
+        const form = new FormData();
+        form.append("sport", sportKey);
+        await api.post("/ai/train/compare", form, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        const refreshed = await api.get("/ai/metrics/compare", { params });
         setCompare(refreshed.data);
       }
-    } catch (err) {
+    } catch (error) {
       setMetrics(null);
       setCompare(null);
       setMessage(
-        err?.response?.data?.error ||
-          "Impossible de charger les métriques. Vérifie le service IA."
+        error?.response?.data?.error || "Impossible de charger les metriques. Verifie le service IA."
       );
     } finally {
       setLoading(false);
@@ -103,7 +107,7 @@ function ModelLab() {
 
   useEffect(() => {
     loadMetrics();
-  }, []);
+  }, [sportKey]);
 
   const triggerTraining = async () => {
     setLoading(true);
@@ -111,18 +115,24 @@ function ModelLab() {
     try {
       const form = new FormData();
       form.append("algo", algo);
+      form.append("sport", sportKey);
       await api.post("/ai/train/refresh", form, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setMessage("Entrainement relancé avec le dataset actuel.");
-      await api.post("/ai/train/compare");
-      loadMetrics();
-    } catch (err) {
-      const details = err?.response?.data?.details || err?.response?.data?.error;
+      setMessage(`Entrainement ${sport.toLowerCase()} relance.`);
+
+      const compareForm = new FormData();
+      compareForm.append("sport", sportKey);
+      await api.post("/ai/train/compare", compareForm, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      await loadMetrics();
+    } catch (error) {
+      const details = error?.response?.data?.details || error?.response?.data?.error;
       setMessage(
         details
-          ? `Impossible de relancer l'entrainement: ${details}`
-          : "Impossible de relancer l'entrainement. Vérifie le service IA."
+          ? `Impossible de relancer l entrainement: ${details}`
+          : "Impossible de relancer l entrainement. Verifie le service IA."
       );
     } finally {
       setLoading(false);
@@ -133,24 +143,26 @@ function ModelLab() {
     setLoading(true);
     setMessage("");
     try {
-      await api.post("/ai/model/select", { model: value });
+      await api.post("/ai/model/select", { sport: sportKey, model: value });
       setActiveModel(value);
-      setMessage(`Modèle actif: ${value}.`);
-      loadMetrics();
-    } catch (err) {
-      const details = err?.response?.data?.details || err?.response?.data?.error;
+      setMessage(`Modele actif ${sport.toLowerCase()}: ${value}.`);
+      await loadMetrics();
+    } catch (error) {
+      const details = error?.response?.data?.details || error?.response?.data?.error;
       setMessage(
         details
-          ? `Impossible de changer le modèle actif: ${details}`
-          : "Impossible de changer le modèle actif. Vérifie le service IA."
+          ? `Impossible de changer le modele actif: ${details}`
+          : "Impossible de changer le modele actif."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const importance = metrics?.feature_importance || {};
-  const importanceEntries = Object.entries(importance).sort((a, b) => b[1] - a[1]);
+  const importanceEntries = useMemo(() => {
+    const importance = metrics?.feature_importance || {};
+    return Object.entries(importance).sort((a, b) => b[1] - a[1]);
+  }, [metrics]);
 
   const compareEntries = useMemo(() => {
     if (!compare) return [];
@@ -160,26 +172,16 @@ function ModelLab() {
     ];
   }, [compare]);
 
-  const rocByClass = useMemo(() => {
-    if (!compare) return [];
-    return compareEntries.map((entry) => ({
-      key: entry.key,
-      label: entry.label,
-      roc: entry.data?.roc || {},
-      pr: entry.data?.pr || {},
-    }));
-  }, [compare, compareEntries]);
-
   return (
     <div className="page">
       <div className="page-head">
         <div>
-          <p className="eyebrow">Laboratoire IA</p>
-          <h1>Comparer et ajuster le modèle</h1>
-          <p className="lead">Teste plusieurs algorithmes et observe les features clé.</p>
+          <p className="eyebrow">Laboratoire IA ({sport})</p>
+          <h1>Comparer et ajuster le modele</h1>
+          <p className="lead">Chaque sport a son propre entrainement, ses courbes et son modele actif.</p>
         </div>
         <div className="model-actions">
-          <select value={algo} onChange={(e) => setAlgo(e.target.value)}>
+          <select value={algo} onChange={(event) => setAlgo(event.target.value)}>
             {algoOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -187,7 +189,7 @@ function ModelLab() {
             ))}
           </select>
           <button className="button primary" onClick={triggerTraining} disabled={loading}>
-            {loading ? "Entrainement..." : "Relancer l'entrainement"}
+            {loading ? "Entrainement..." : "Relancer l entrainement"}
           </button>
         </div>
       </div>
@@ -197,12 +199,12 @@ function ModelLab() {
       <section className="grid-two">
         <div className="panel">
           <div className="section-head">
-            <h2>Métriques du modèle actif</h2>
-            <p>Dernier entrainement effectué.</p>
+            <h2>Metriques du modele actif</h2>
+            <p>Dernier entrainement du sport selectionne.</p>
           </div>
           <div className="score-grid">
             <div>
-              <span>Modèle</span>
+              <span>Modele</span>
               <strong>{metrics?.model || "-"}</strong>
             </div>
             <div>
@@ -219,7 +221,7 @@ function ModelLab() {
             </div>
           </div>
           <div className="active-model">
-            <p>Modèle actif</p>
+            <p>Modele actif</p>
             <div className="active-buttons">
               {algoOptions.map((option) => (
                 <button
@@ -237,7 +239,7 @@ function ModelLab() {
 
         <div className="panel">
           <div className="section-head">
-            <h2>Variables les plus influentes</h2>
+            <h2>Features influentes</h2>
             <p>Importance moyenne par variable.</p>
           </div>
           <div className="importance">
@@ -260,8 +262,8 @@ function ModelLab() {
 
       <section className="panel">
         <div className="section-head">
-          <h2>Comparatif Régression logistique vs Forêt aléatoire</h2>
-          <p>Métriques cote a cote sur le meme dataset.</p>
+          <h2>Comparatif logistic vs random forest</h2>
+          <p>Resultats cote a cote sur le dataset {sport.toLowerCase()}.</p>
         </div>
         <div className="compare-grid">
           {compareEntries.map((entry) => (
@@ -281,7 +283,6 @@ function ModelLab() {
                   <strong>{entry.data?.log_loss?.toFixed?.(2) ?? "-"}</strong>
                 </div>
               </div>
-              <p className="hint">Classes: {entry.data?.classes?.join(", ") || "-"}</p>
             </div>
           ))}
         </div>
@@ -289,16 +290,16 @@ function ModelLab() {
 
       <section className="panel">
         <div className="section-head">
-          <h2>ROC par classe</h2>
-          <p>Courbes ROC pour chaque outcome.</p>
+          <h2>Courbes ROC par classe</h2>
+          <p>home_win / draw / away_win par modele.</p>
         </div>
-        {rocByClass.map((modelEntry) => (
-          <div key={modelEntry.key} className="curve-section">
-            <h3>{modelEntry.label}</h3>
+        {compareEntries.map((entry) => (
+          <div key={entry.key} className="curve-section">
+            <h3>{entry.label}</h3>
             <div className="curve-grid">
-              {Object.entries(modelEntry.roc || {}).map(([label, roc]) => (
+              {Object.entries(entry.data?.roc || {}).map(([label, roc]) => (
                 <CurveCard
-                  key={`${modelEntry.key}-${label}`}
+                  key={`${entry.key}-roc-${label}`}
                   title={label}
                   subtitle="ROC"
                   polyline={buildPolyline(mapRoc(roc))}
@@ -312,16 +313,16 @@ function ModelLab() {
 
       <section className="panel">
         <div className="section-head">
-          <h2>Précision-Rappel par classe</h2>
-          <p>Courbes PR pour chaque outcome.</p>
+          <h2>Courbes Precision-Recall</h2>
+          <p>PR par classe et par modele.</p>
         </div>
-        {rocByClass.map((modelEntry) => (
-          <div key={modelEntry.key} className="curve-section">
-            <h3>{modelEntry.label}</h3>
+        {compareEntries.map((entry) => (
+          <div key={entry.key} className="curve-section">
+            <h3>{entry.label}</h3>
             <div className="curve-grid">
-              {Object.entries(modelEntry.pr || {}).map(([label, pr]) => (
+              {Object.entries(entry.data?.pr || {}).map(([label, pr]) => (
                 <CurveCard
-                  key={`${modelEntry.key}-${label}`}
+                  key={`${entry.key}-pr-${label}`}
                   title={label}
                   subtitle="PR"
                   polyline={buildPolyline(mapPr(pr))}
@@ -337,17 +338,18 @@ function ModelLab() {
         <div className="panel">
           <div className="section-head">
             <h2>Matrice de confusion</h2>
-            <p>Modèle actif (dernier entrainement).</p>
+            <p>Modele actif pour {sport.toLowerCase()}.</p>
           </div>
           <ConfusionTable matrix={metrics?.confusion_matrix} labels={metrics?.classes || []} />
         </div>
         <div className="panel">
           <div className="section-head">
-            <h2>Etat modèle</h2>
+            <h2>Etat modele</h2>
             <p>Modele actif: {activeModel}</p>
           </div>
           <p className="hint">
-            Change le modèle actif pour basculer la prédiction en temps réel.
+            Le changement de modele est isole par sport. Le football et le basketball peuvent avoir des
+            modeles actifs differents.
           </p>
         </div>
       </section>
