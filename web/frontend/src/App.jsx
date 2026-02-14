@@ -9,6 +9,7 @@ import DataHub from "./pages/DataHub";
 import ModelLab from "./pages/ModelLab";
 import Players from "./pages/Players";
 import Login from "./pages/Login";
+import { SPORTS } from "./services/sports";
 import "./App.css";
 
 function ProtectedRoute({ authed, children }) {
@@ -20,7 +21,6 @@ function ProtectedRoute({ authed, children }) {
 }
 
 function App() {
-  const sportOptions = ["Football", "Basketball", "Tennis", "Rugby", "Handball"];
   const [aiStatus, setAiStatus] = useState("checking");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -43,7 +43,7 @@ function App() {
 
   const checkAi = async () => {
     try {
-      await api.get("/ai/health");
+      await api.get("/ai/health", { params: { sport: activeSport.toLowerCase() } });
       setAiStatus("online");
       setShowOnboarding(false);
     } catch (err) {
@@ -58,7 +58,7 @@ function App() {
       const timer = setInterval(checkAi, 10000);
       return () => clearInterval(timer);
     }
-  }, [authed]);
+  }, [authed, activeSport]);
 
   const startAi = async () => {
     setStarting(true);
@@ -166,7 +166,7 @@ function App() {
           </div>
           <div className="topbar-actions">
             <select className="sport-select" value={activeSport} onChange={handleSportChange}>
-              {sportOptions.map((sport) => (
+              {SPORTS.map((sport) => (
                 <option key={sport} value={sport}>
                   {sport}
                 </option>
@@ -202,7 +202,7 @@ function App() {
               path="/predictions"
               element={
                 <ProtectedRoute authed={authed}>
-                  <Predictions />
+                  <Predictions sport={activeSport} />
                 </ProtectedRoute>
               }
             />
@@ -210,7 +210,7 @@ function App() {
               path="/matches"
               element={
                 <ProtectedRoute authed={authed}>
-                  <Matches />
+                  <Matches sport={activeSport} />
                 </ProtectedRoute>
               }
             />
@@ -218,7 +218,7 @@ function App() {
               path="/insights"
               element={
                 <ProtectedRoute authed={authed}>
-                  <Insights />
+                  <Insights sport={activeSport} />
                 </ProtectedRoute>
               }
             />
@@ -226,7 +226,7 @@ function App() {
               path="/players"
               element={
                 <ProtectedRoute authed={authed}>
-                  <Players />
+                  <Players sport={activeSport} />
                 </ProtectedRoute>
               }
             />
@@ -234,7 +234,7 @@ function App() {
               path="/data"
               element={
                 <ProtectedRoute authed={authed}>
-                  <DataHub />
+                  <DataHub sport={activeSport} />
                 </ProtectedRoute>
               }
             />
@@ -242,7 +242,7 @@ function App() {
               path="/model"
               element={
                 <ProtectedRoute authed={authed}>
-                  <ModelLab />
+                  <ModelLab sport={activeSport} />
                 </ProtectedRoute>
               }
             />

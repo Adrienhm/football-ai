@@ -2,9 +2,9 @@ from pathlib import Path
 
 from training import train_model
 
-DATA_PATH = Path(__file__).parent / "data" / "matches.csv"
+DATA_PATH = Path(__file__).parent / "data" / "football_matches.csv"
 MODEL_PATH = Path(__file__).parent / "models" / "football_model.joblib"
-METRICS_PATH = Path(__file__).parent / "models" / "metrics.json"
+METRICS_PATH = Path(__file__).parent / "models" / "football_metrics.json"
 
 
 if __name__ == "__main__":

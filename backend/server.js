@@ -77,6 +77,13 @@ const parseMatchesCsv = (csvText) => {
   });
 };
 
+const loadSampleMatches = () => {
+  const samplePath = path.join(__dirname, "data", "sample-matches.json");
+  const raw = fs.readFileSync(samplePath, "utf-8");
+  const data = JSON.parse(raw);
+  return Array.isArray(data) ? data : [];
+};
+
 const getOutlierThreshold = (sport) => {
   const normalized = normalizeSport(sport, SPORTS.FOOTBALL) || SPORTS.FOOTBALL;
   switch (normalized) {
@@ -129,17 +136,18 @@ const seedMatches = async () => {
     const statsbombPath = ensureStatsbombCsv();
     if (statsbombPath && fs.existsSync(statsbombPath)) {
       const csv = fs.readFileSync(statsbombPath, "utf-8");
-      const data = parseMatchesCsv(csv);
-      if (data.length) {
-        await Match.insertMany(data);
-        console.log(`Seeded ${data.length} matches from StatsBomb CSV.`);
+      const footballData = parseMatchesCsv(csv);
+      if (footballData.length) {
+        const sampleData = loadSampleMatches();
+        const nonFootball = sampleData.filter((item) => normalizeSport(item.sport) !== SPORTS.FOOTBALL);
+        const merged = [...footballData, ...nonFootball];
+        await Match.insertMany(merged);
+        console.log(`Seeded ${merged.length} matches (StatsBomb football + multi-sport sample).`);
         return true;
       }
     }
 
-    const samplePath = path.join(__dirname, "data", "sample-matches.json");
-    const raw = fs.readFileSync(samplePath, "utf-8");
-    const data = JSON.parse(raw);
+    const data = loadSampleMatches();
     if (Array.isArray(data) && data.length) {
       await Match.insertMany(data);
       console.log(`Seeded ${data.length} matches from sample.`);

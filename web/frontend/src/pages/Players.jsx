@@ -1,23 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
+import { toSportKey } from "../services/sports";
 
 const sortOptions = [
-  { value: "goals", label: "Buts" },
-  { value: "xg", label: "xG" },
+  { value: "goals", label: "Buts/Points" },
+  { value: "xg", label: "xG/Production" },
   { value: "minutes", label: "Minutes" },
 ];
 
-function Players() {
+function Players({ sport = "Football" }) {
+  const sportKey = toSportKey(sport);
   const [players, setPlayers] = useState([]);
   const [filter, setFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("all");
   const [sortBy, setSortBy] = useState("goals");
 
   useEffect(() => {
-    api.get("/players").then((res) => setPlayers(res.data)).catch(() => {
-      setPlayers([]);
-    });
-  }, []);
+    api
+      .get("/players", { params: { sport: sportKey } })
+      .then((res) => setPlayers(res.data))
+      .catch(() => setPlayers([]));
+  }, [sportKey]);
+
+  useEffect(() => {
+    setFilter("");
+    setTeamFilter("all");
+  }, [sportKey]);
 
   const teams = useMemo(() => {
     const list = Array.from(new Set(players.map((p) => p.team)));
@@ -27,12 +35,12 @@ function Players() {
   const filtered = useMemo(() => {
     let result = players;
     if (teamFilter !== "all") {
-      result = result.filter((p) => p.team === teamFilter);
+      result = result.filter((player) => player.team === teamFilter);
     }
     if (filter) {
       const term = filter.toLowerCase();
-      result = result.filter((p) =>
-        `${p.name} ${p.team} ${p.position}`.toLowerCase().includes(term)
+      result = result.filter((player) =>
+        `${player.name} ${player.team} ${player.position}`.toLowerCase().includes(term)
       );
     }
     return [...result].sort((a, b) => Number(b[sortBy]) - Number(a[sortBy]));
@@ -42,27 +50,27 @@ function Players() {
     <div className="page">
       <div className="page-head">
         <div>
-          <p className="eyebrow">Joueurs</p>
-          <h1>Statistiques et forme des joueurs</h1>
+          <p className="eyebrow">Joueurs ({sport})</p>
+          <h1>Statistiques et forme par sport</h1>
           <p className="lead">
-            Données synthétiques réalistes : minutes, xG, buts, passes et forme récente.
+            Chaque sport charge son roster, ses equipes et ses indicateurs de performance.
           </p>
         </div>
         <div className="player-controls">
           <input
             className="input"
-            placeholder="Chercher un joueur ou une équipe"
+            placeholder="Chercher un joueur ou une equipe"
             value={filter}
-            onChange={(e) => setFilter(e.target.value)}
+            onChange={(event) => setFilter(event.target.value)}
           />
-          <select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
+          <select value={teamFilter} onChange={(event) => setTeamFilter(event.target.value)}>
             {teams.map((team) => (
               <option key={team} value={team}>
                 {team === "all" ? "Toutes les equipes" : team}
               </option>
             ))}
           </select>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
             {sortOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 Trier par {option.label}
@@ -73,38 +81,40 @@ function Players() {
       </div>
 
       <div className="player-grid">
-        {filtered.map((p) => (
-          <div className="player-card" key={p.id}>
+        {filtered.map((player) => (
+          <div className="player-card" key={player.id}>
             <div className="player-head">
               <div>
-                <h3>{p.name}</h3>
-                <span>{p.team} � {p.position}</span>
+                <h3>{player.name}</h3>
+                <span>
+                  {player.team} - {player.position}
+                </span>
               </div>
               <div className="player-form">
                 <span>Forme</span>
-                <strong>{p.form}</strong>
+                <strong>{player.form}</strong>
               </div>
             </div>
             <div className="player-stats">
               <div>
                 <span>Minutes</span>
-                <strong>{p.minutes}</strong>
+                <strong>{player.minutes}</strong>
               </div>
               <div>
-                <span>Buts</span>
-                <strong>{p.goals}</strong>
+                <span>Buts/Points</span>
+                <strong>{player.goals}</strong>
               </div>
               <div>
                 <span>Passes</span>
-                <strong>{p.assists}</strong>
+                <strong>{player.assists}</strong>
               </div>
               <div>
                 <span>Tirs</span>
-                <strong>{p.shots}</strong>
+                <strong>{player.shots}</strong>
               </div>
               <div>
-                <span>xG</span>
-                <strong>{p.xg}</strong>
+                <span>xG/Prod</span>
+                <strong>{player.xg}</strong>
               </div>
             </div>
           </div>

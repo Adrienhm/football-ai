@@ -1,13 +1,23 @@
 const express = require("express");
 const axios = require("axios");
+const { normalizeSport, SPORT_VALUES } = require("../constants/sports");
 
 const router = express.Router();
 
 const AI_URL = process.env.AI_SERVICE_URL || "http://localhost:8001";
 
 router.post("/predict", async (req, res) => {
+  const sport = normalizeSport(req.body?.sport);
+  if (req.body?.sport && !sport) {
+    return res.status(400).json({
+      error: "Invalid sport",
+      supported_sports: SPORT_VALUES,
+    });
+  }
+
   try {
     const payload = {
+      sport: sport || "football",
       strengthA: Number(req.body.strengthA ?? 75),
       strengthB: Number(req.body.strengthB ?? 70),
       formA: Number(req.body.formA ?? 0.65),
