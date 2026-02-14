@@ -3,6 +3,7 @@ const path = require("path");
 const express = require("express");
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 const Match = require("../models/Match");
+const { normalizeSport, SPORT_LABELS, SPORT_VALUES } = require("../constants/sports");
 
 const router = express.Router();
 const samplePath = path.join(__dirname, "..", "data", "sample-matches.json");
@@ -16,12 +17,18 @@ const loadSample = () => {
   }
 };
 
-const fetchMatches = async () => {
+const filterSampleBySport = (rows, sport) => {
+  if (!sport) return rows;
+  return rows.filter((row) => normalizeSport(row.sport) === sport);
+};
+
+const fetchMatches = async (sport) => {
   const isDbReady = Match.db?.readyState === 1;
   if (!isDbReady) {
-    return loadSample();
+    return filterSampleBySport(loadSample(), sport);
   }
-  return Match.find().sort({ date: -1 }).limit(50);
+  const query = sport ? { sport } : {};
+  return Match.find(query).sort({ date: -1 }).limit(50);
 };
 
 const buildStats = (matches) => {
@@ -42,7 +49,7 @@ const buildStats = (matches) => {
   };
 };
 
-const buildSummary = (stats) => {
+const buildSummary = (stats, sport) => {
   const avg = Number(stats.avgGoals || 0);
   const home = Number(stats.homeWinRate || 0);
   const draw = Number(stats.volatility || 0);
@@ -52,17 +59,28 @@ const buildSummary = (stats) => {
   const drawTone = draw >= 30 ? "eleve" : "normal";
 
   return (
-    `Le championnat montre un profil ${goalsTone} avec ${avg} buts/match. ` +
+    `Le championnat montre un profil ${goalsTone} avec ${avg} ${
+      sport === "football" ? "buts" : "points"
+    }/match. ` +
     `L'avantage domicile est ${homeTone} (${home}%). ` +
     `Le taux de nuls est ${drawTone} (${draw}%).`
   );
 };
 
-router.get("/csv", async (_req, res) => {
+router.get("/csv", async (req, res) => {
+  const sport = req.query.sport ? normalizeSport(req.query.sport) : null;
+  if (req.query.sport && !sport) {
+    return res.status(400).json({
+      error: "Invalid sport",
+      supported_sports: SPORT_VALUES,
+    });
+  }
+
   try {
-    const matches = await fetchMatches();
-    const header = ["teamA", "scoreA", "scoreB", "teamB", "form", "risk", "date"];
+    const matches = await fetchMatches(sport);
+    const header = ["sport", "teamA", "scoreA", "scoreB", "teamB", "form", "risk", "date"];
     const rows = matches.map((m) => [
+      normalizeSport(m.sport) || "football",
       m.teamA,
       m.scoreA,
       m.scoreB,
@@ -73,18 +91,29 @@ router.get("/csv", async (_req, res) => {
     ]);
     const csv = [header.join(","), ...rows.map((r) => r.join(","))].join("\n");
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", "attachment; filename=football-ai-matches.csv");
+    const fileSuffix = sport || "all-sports";
+    res.setHeader("Content-Disposition", `attachment; filename=sport-ai-${fileSuffix}-matches.csv`);
     return res.send(csv);
   } catch (error) {
     return res.status(500).json({ error: "CSV export failed" });
   }
 });
 
-router.get("/pdf", async (_req, res) => {
+router.get("/pdf", async (req, res) => {
+  const sport = req.query.sport ? normalizeSport(req.query.sport) : null;
+  if (req.query.sport && !sport) {
+    return res.status(400).json({
+      error: "Invalid sport",
+      supported_sports: SPORT_VALUES,
+    });
+  }
+
   try {
-    const matches = await fetchMatches();
+    const matches = await fetchMatches(sport);
     const stats = buildStats(matches);
-    const summary = buildSummary(stats);
+    const summary = buildSummary(stats, sport);
+    const sportLabel = sport ? SPORT_LABELS[sport] : "Tous sports";
+    const avgLabel = sport === "football" ? "Moyenne de buts" : "Points moyens";
 
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595, 842]);
@@ -97,7 +126,7 @@ router.get("/pdf", async (_req, res) => {
     const dark = rgb(0.1, 0.12, 0.12);
 
     page.drawRectangle({ x: 0, y: height - 120, width: 595, height: 120, color: dark });
-    page.drawText("Football AI - Rapport de performance", {
+    page.drawText(`Sport AI - Rapport de performance (${sportLabel})`, {
       x: 40,
       y: height - 60,
       size: 20,
@@ -123,7 +152,7 @@ router.get("/pdf", async (_req, res) => {
 
     const cards = [
       { label: "Matchs analyses", value: stats.total },
-      { label: "Moyenne de buts", value: stats.avgGoals },
+      { label: avgLabel, value: stats.avgGoals },
       { label: "Victoire domicile", value: `${stats.homeWinRate}%` },
       { label: "Volatilite (nuls)", value: `${stats.volatility}%` },
     ];
@@ -138,7 +167,7 @@ router.get("/pdf", async (_req, res) => {
     });
 
     y -= 140;
-    page.drawText("Graphique - Moyenne de buts", { x: 40, y, size: 12, font: fontBold });
+    page.drawText(`Graphique - ${avgLabel}`, { x: 40, y, size: 12, font: fontBold });
     y -= 12;
     const barX = 40;
     const barY = y - 60;
@@ -148,7 +177,7 @@ router.get("/pdf", async (_req, res) => {
     const fillWidth = Math.min(barWidth, (Number(stats.avgGoals) / maxAvg) * barWidth);
     page.drawRectangle({ x: barX, y: barY, width: barWidth, height: barHeight, color: rgb(0.18, 0.22, 0.2) });
     page.drawRectangle({ x: barX, y: barY, width: fillWidth, height: barHeight, color: accent });
-    page.drawText(`${stats.avgGoals} buts/match`, { x: barX, y: barY + 18, size: 9, font, color: muted });
+    page.drawText(`${stats.avgGoals} / match`, { x: barX, y: barY + 18, size: 9, font, color: muted });
 
     y -= 100;
     page.drawText("Derniers matchs", { x: 40, y, size: 12, font: fontBold });
@@ -167,7 +196,8 @@ router.get("/pdf", async (_req, res) => {
 
     const pdfBytes = await pdfDoc.save();
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "attachment; filename=football-ai-rapport.pdf");
+    const fileSuffix = sport || "all-sports";
+    res.setHeader("Content-Disposition", `attachment; filename=sport-ai-${fileSuffix}-rapport.pdf`);
     return res.send(Buffer.from(pdfBytes));
   } catch (error) {
     return res.status(500).json({ error: "Report generation failed" });
