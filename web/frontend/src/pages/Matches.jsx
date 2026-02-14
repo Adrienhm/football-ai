@@ -1,41 +1,46 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
+import { toSportKey } from "../services/sports";
 
-function Matches() {
+function Matches({ sport = "Football" }) {
+  const sportKey = toSportKey(sport);
   const [matches, setMatches] = useState([]);
 
   useEffect(() => {
-    api.get("/matches").then((res) => setMatches(res.data));
-  }, []);
+    api
+      .get("/matches", { params: { sport: sportKey } })
+      .then((res) => setMatches(res.data))
+      .catch(() => setMatches([]));
+  }, [sportKey]);
 
   return (
     <div className="matches">
       <div className="section-head">
-        <h2>Matchs récents</h2>
-        <p>Suivi des scores et tendances d'équipes en temps réel.</p>
+        <h2>Matchs recents - {sport}</h2>
+        <p>Flux dedie par sport avec ses propres donnees et ses propres scores.</p>
       </div>
 
       {matches.length === 0 ? (
         <div className="empty">
-          <p>Aucun match disponible pour le moment.</p>
-          <span>Connecte la source de données pour alimenter le flux.</span>
+          <p>Aucun match disponible pour {sport.toLowerCase()}.</p>
+          <span>Connecte une source de donnees ou importe un dataset.</span>
         </div>
       ) : (
         <div className="match-list">
-          {matches.map((m, i) => (
-            <div className="match-card" key={`${m.teamA}-${m.teamB}-${i}`}>
+          {matches.map((match, index) => (
+            <div className="match-card" key={`${match.teamA}-${match.teamB}-${index}`}>
               <div>
-                <p className="match-label">{m.teamA}</p>
-                <strong>{m.scoreA}</strong>
+                <p className="match-label">{match.teamA}</p>
+                <strong>{match.scoreA}</strong>
               </div>
               <div className="match-vs">VS</div>
               <div>
-                <p className="match-label">{m.teamB}</p>
-                <strong>{m.scoreB}</strong>
+                <p className="match-label">{match.teamB}</p>
+                <strong>{match.scoreB}</strong>
               </div>
               <div className="match-meta">
-                <span>Forme: {m.form || "Stable"}</span>
-                <span>Risque: {m.risk || "Modere"}</span>
+                <span>Sport: {sport}</span>
+                <span>Date: {match.date || "-"}</span>
               </div>
             </div>
           ))}
