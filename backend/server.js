@@ -5,6 +5,7 @@ const cors = require("cors");
 const { spawnSync } = require("child_process");
 const connectDB = require("./config/db");
 const Match = require("./models/Match");
+const { SPORTS, normalizeSport } = require("./constants/sports");
 
 require("dotenv").config();
 
@@ -66,6 +67,7 @@ const parseMatchesCsv = (csvText) => {
   return lines.slice(1).map((line) => {
     const row = line.split(",");
     return {
+      sport: SPORTS.FOOTBALL,
       teamA: read(row, "team_a", "Unknown A"),
       teamB: read(row, "team_b", "Unknown B"),
       scoreA: Math.max(0, Math.round(readNum(row, "goals_a"))),
@@ -75,8 +77,27 @@ const parseMatchesCsv = (csvText) => {
   });
 };
 
-const isOutlierScore = (match) =>
-  (Number(match.scoreA) || 0) > 15 || (Number(match.scoreB) || 0) > 15;
+const getOutlierThreshold = (sport) => {
+  const normalized = normalizeSport(sport, SPORTS.FOOTBALL) || SPORTS.FOOTBALL;
+  switch (normalized) {
+    case SPORTS.BASKETBALL:
+      return 220;
+    case SPORTS.TENNIS:
+      return 7;
+    case SPORTS.RUGBY:
+      return 90;
+    case SPORTS.HANDBALL:
+      return 80;
+    case SPORTS.FOOTBALL:
+    default:
+      return 15;
+  }
+};
+
+const isOutlierScore = (match) => {
+  const threshold = getOutlierThreshold(match.sport);
+  return (Number(match.scoreA) || 0) > threshold || (Number(match.scoreB) || 0) > threshold;
+};
 
 const hasUnrealisticData = async () => {
   const sample = await Match.find().limit(200);
@@ -89,6 +110,9 @@ const seedMatches = async () => {
   if (Match.db?.readyState !== 1) {
     return false;
   }
+
+  // Migrate legacy records created before introducing the "sport" field.
+  await Match.updateMany({ sport: { $exists: false } }, { $set: { sport: SPORTS.FOOTBALL } });
 
   const count = await Match.countDocuments();
   if (count > 0) {
